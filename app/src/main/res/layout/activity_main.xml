@@ -9,7 +9,7 @@
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
-        android:layout_height="600dp"
+        android:layout_height="200dp"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button

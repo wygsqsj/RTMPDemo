@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
 
     public static String LOG_TAG = "音视频";
     private final String BILIBILIURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_253004675_57099388&key=d7bae0426c3adc1eec7c9786d25c99fb&schedule=rtmp&pflag=9";
+//    private final String BILIBILIURL = "rtmp://192.168.28.138:1935/live/?room";
 
     private MediaProjection mMediaProjection;    //录屏api
     private MediaProjectionManager mediaManager;

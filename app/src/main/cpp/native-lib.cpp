@@ -138,6 +138,7 @@ int sendPacket(RTMPPacket *packet) {
  */
 RTMPPacket *createVideoPacket(int8_t *buf, int len, long tms, Live *live) {
     buf += 4;
+    len -= 4;
     RTMPPacket *packet = (RTMPPacket *) malloc(sizeof(RTMPPacket));
     int body_size = len + 9;
     LOGI("创建帧数据 Packet ,body_size:%d", body_size);
@@ -165,7 +166,7 @@ RTMPPacket *createVideoPacket(int8_t *buf, int len, long tms, Live *live) {
     packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
     packet->m_nBodySize = body_size;
     //通道值，音视频不能相同
-    packet->m_nChannel = 6;
+    packet->m_nChannel = 0x04;
     packet->m_nTimeStamp = tms;
     packet->m_hasAbsTimestamp = 0;
     packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
@@ -216,7 +217,7 @@ RTMPPacket *createSPSPPSPacket(Live *live) {
     packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
     packet->m_nBodySize = body_size;
     //通道值，音视频不能相同
-    packet->m_nChannel = 6;
+    packet->m_nChannel = 0x04;
     packet->m_nTimeStamp = 0;
     packet->m_hasAbsTimestamp = 0;
     packet->m_headerType = RTMP_PACKET_SIZE_LARGE;

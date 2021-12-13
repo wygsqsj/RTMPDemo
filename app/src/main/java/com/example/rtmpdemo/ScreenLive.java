@@ -4,9 +4,9 @@ import android.media.projection.MediaProjection;
 import android.os.Build;
 import android.util.Log;
 
-import java.util.concurrent.LinkedBlockingQueue;
-
 import androidx.annotation.RequiresApi;
+
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
 
@@ -41,6 +41,12 @@ public class ScreenLive extends Thread {
         start();
     }
 
+    //开启推送模式
+    public void startLive(String url) {
+        this.url = url;
+        start();
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void run() {
@@ -49,9 +55,6 @@ public class ScreenLive extends Thread {
             Log.i(LOG_TAG, "RTMP服务器连接失败");
             return;
         }
-        //初始化编码线程
-        videoCodec = new VideoCodec(this);
-        videoCodec.startLive(mediaProjection);
         while (isLive) {
             RTMPPacket packet = null;
             try {

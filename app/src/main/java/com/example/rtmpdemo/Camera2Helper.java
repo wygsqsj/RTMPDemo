@@ -25,15 +25,18 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+
+import com.example.rtmpdemo.util.ImageUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.ReentrantLock;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
 
@@ -42,6 +45,7 @@ import static com.example.rtmpdemo.MainActivity.LOG_TAG;
  */
 public class Camera2Helper {
 
+    private ScreenLive screenLive;
     private TextureView textureView;
     private Context context;
     private CameraManager mCameraManager;
@@ -61,11 +65,20 @@ public class Camera2Helper {
     private byte[] y;
     private byte[] u;
     private byte[] v;
+    private CoverThread coverThread;
     private ReentrantLock lock = new ReentrantLock();
+    private LinkedBlockingDeque<byte[]> deque = new LinkedBlockingDeque<>();
+    private CameraCodec cameraCodec;
+    private byte[] nv21, nv12, nv21_rotated;
 
-    public Camera2Helper(Context context, TextureView textureView) {
+    public Camera2Helper(Context context, TextureView textureView, ScreenLive screenLive) {
         this.context = context;
         this.textureView = textureView;
+        this.screenLive = screenLive;
+    }
+
+    public LinkedBlockingDeque<byte[]> getYUVQueue() {
+        return deque;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -142,7 +155,7 @@ public class Camera2Helper {
                 //当前yuv数据封装成的Image
                 Image image = reader.acquireNextImage();
                 // Y:U:V == 4:2:2
-                if (readListener != null && image.getFormat() == ImageFormat.YUV_420_888) {
+                if (image.getFormat() == ImageFormat.YUV_420_888) {
                     Image.Plane[] planes = image.getPlanes();
                     // 加锁确保y、u、v来源于同一个Image
                     lock.lock();
@@ -159,7 +172,32 @@ public class Camera2Helper {
                         planes[0].getBuffer().get(y);
                         planes[1].getBuffer().get(u);
                         planes[2].getBuffer().get(v);
-                        readListener.onPreview(y, u, v, mPreviewSize, planes[0].getRowStride());
+                        if (coverThread == null) {
+                            coverThread = new CoverThread();
+                            coverThread.start();
+                        }
+                        if (cameraCodec == null) {
+                            cameraCodec = new CameraCodec(screenLive, Camera2Helper.this, planes[0].getRowStride(), mPreviewSize.getHeight(),
+                                    15, mPreviewSize.getHeight() * mPreviewSize.getWidth() * 3 / 2);
+                            cameraCodec.start();
+                        }
+//                        coverThread.onPreview(y, u, v, mPreviewSize, planes[0].getRowStride());
+
+                        if (nv12 == null) {
+                            int length = planes[0].getRowStride() * mPreviewSize.getHeight() * 3 / 2;
+                            Log.i(LOG_TAG, "stride" + planes[0].getRowStride());
+                            Log.i(LOG_TAG, "Size w h " + mPreviewSize.getWidth() + " " + mPreviewSize.getHeight());
+                            Log.i(LOG_TAG, "存储长度" + length);
+                            nv21 = new byte[length];
+                            nv21_rotated = new byte[length];
+                            nv12 = new byte[length];
+                        }
+                        ImageUtil.yuvToNv21(y, u, v, nv21, planes[0].getRowStride(), mPreviewSize.getHeight());
+                        ImageUtil.revolveYuv(nv21, nv21_rotated, planes[0].getRowStride(), mPreviewSize.getHeight());
+                        ImageUtil.nv21ToNv12(nv21_rotated, nv12, planes[0].getRowStride(), mPreviewSize.getHeight());
+                        if (deque != null) {
+                            deque.push(nv12);
+                        }
                     }
                     lock.unlock();
                 }
@@ -324,5 +362,49 @@ public class Camera2Helper {
 
     public interface CameraYUVReadListener {
         public void onPreview(byte[] y, byte[] u, byte[] v, Size width, int stride);
+    }
+
+    /**
+     * 将yuv 数据 转化成 nv12
+     */
+    class CoverThread extends Thread {
+        private byte[] y;
+        private byte[] u;
+        private byte[] v;
+        private byte[] nv21, nv12, nv21_rotated;
+        int stride, height;
+
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        public void onPreview(byte[] y, byte[] u, byte[] v, Size previewSize, int stride) {
+            if (nv12 == null) {
+                this.stride = stride;
+                //存储长度YUV加起来Y 1 uv0.5
+                this.height = previewSize.getHeight();
+                int length = stride * previewSize.getHeight() * 3 / 2;
+                Log.i(LOG_TAG, "stride" + stride);
+                Log.i(LOG_TAG, "Size w h " + previewSize.getWidth() + " " + previewSize.getHeight());
+                Log.i(LOG_TAG, "存储长度" + length);
+                nv21 = new byte[length];
+                nv21_rotated = new byte[length];
+                nv12 = new byte[length];
+            }
+
+            this.y = y;
+            this.u = u;
+            this.v = v;
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            if (y != null) {
+                ImageUtil.yuvToNv21(y, u, v, nv21, stride, height);
+                ImageUtil.revolveYuv(nv21, nv21_rotated, stride, height);
+                ImageUtil.nv21ToNv12(nv21_rotated, nv12, stride, height);
+                if (deque != null) {
+                    deque.add(nv12);
+                }
+            }
+        }
     }
 }

@@ -19,8 +19,8 @@ import com.example.rtmpdemo.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
 
     public static String LOG_TAG = "音视频";
-    public static final String BILIBILIURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_253004675_57099388&key=d7bae0426c3adc1eec7c9786d25c99fb&schedule=rtmp&pflag=9";
-//    private final String BILIBILIURL = "rtmp://192.168.28.138:1935/live/?room";
+//    public static final String BILIBILIURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_253004675_57099388&key=d7bae0426c3adc1eec7c9786d25c99fb&schedule=rtmp&pflag=9";
+    private final String BILIBILIURL = "rtmp://192.168.28.139:1935/live/?room";
 
     private Camera2Helper helper;
 

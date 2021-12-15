@@ -126,7 +126,14 @@ public class CameraCodec extends Thread {
                     byte[] outData = new byte[encodeBufferInfo.size];
                     outputBuffer.get(outData);
 
-                    RTMPPacket rtmpPacket = new RTMPPacket(outData, System.currentTimeMillis() - startTime);
+                    if (startTime == 0) {
+                        startTime = encodeBufferInfo.presentationTimeUs / 1000;
+                    }
+                    RTMPPacket rtmpPacket = new RTMPPacket();
+                    rtmpPacket.setBuffer(outData);
+                    rtmpPacket.setType(RTMPPacket.VIDEO_TYPE);
+                    long tms = encodeBufferInfo.presentationTimeUs / 1000 - startTime;
+                    rtmpPacket.setTms(tms);
                     screenLive.addPacket(rtmpPacket);
 
                     encodeCodec.releaseOutputBuffer(outputIndex, false);

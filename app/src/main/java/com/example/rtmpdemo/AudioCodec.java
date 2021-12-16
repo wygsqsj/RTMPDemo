@@ -14,6 +14,7 @@ import com.example.rtmpdemo.util.LiveTaskManager;
 import java.nio.ByteBuffer;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
+import static com.example.rtmpdemo.RTMPPacket.AUDIO_HEAD_TYPE;
 
 /**
  * 采集音频数据推流到服务器
@@ -42,20 +43,21 @@ public class AudioCodec extends Thread {
     private int minBufferSize =
             AudioRecord.getMinBufferSize(SAMPLE_RATE_INHZ, CHANNEL_CONFIG, AUDIO_FORMAT);
     private long startTime;
-    private RTMPPacket rtmpPacket;
     //传输层
     private ScreenLive screenLive;
 
 
-    public void startLive() {
+    public void startLive(ScreenLive screenLive) {
+        this.screenLive = screenLive;
         MediaFormat mediaFormat =
-                MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 44100, 2);
-        mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectERLC);
+                MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, SAMPLE_RATE_INHZ, 1);
+
+        mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
 
         //比特率 声音中的比特率是指将模拟声音信号转换成数字声音信号后，单位时间内的二进制数据量，是间接衡量音频质量的一个指标
-        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, AudioFormat.ENCODING_PCM_16BIT);
+        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 64000);
         //最大的缓冲区大小，如果inputBuffer大小小于我们定义的缓冲区大小，可能报出缓冲区溢出异常
-        mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024 * 8 * 8);
+//        mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024 * 8 * 8);
 
         try {
             //构建编码器
@@ -65,7 +67,6 @@ public class AudioCodec extends Thread {
             //启动编码
             mediaCodec.start();
             //初始化录音器
-            AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
             audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
                     SAMPLE_RATE_INHZ,
                     CHANNEL_CONFIG,
@@ -79,11 +80,22 @@ public class AudioCodec extends Thread {
 
     @Override
     public void run() {
+        //发送音频头
+        RTMPPacket rtmpPacket = new RTMPPacket();
+        byte[] audioHeadInfo = {0x12, 0x08};
+        rtmpPacket.setBuffer(audioHeadInfo);
+        rtmpPacket.setType(AUDIO_HEAD_TYPE);
+        screenLive.addPacket(rtmpPacket);
+
         //开始录音
         audioRecord.startRecording();
         isRecoding = true;
         MediaCodec.BufferInfo encodeBufferInfo = new MediaCodec.BufferInfo();//用于描述解码得到的byte[]数据的相关信息
         byte[] buffer = new byte[minBufferSize];
+
+        if (startTime == 0) {
+            startTime = System.currentTimeMillis();//得到时间，毫秒
+        }
 
         while (isRecoding) {
             int len = audioRecord.read(buffer, 0, minBufferSize);
@@ -102,7 +114,7 @@ public class AudioCodec extends Thread {
                 inputBuffer.limit(len);
                 inputBuffer.put(buffer, 0, len);
                 //告诉工厂这头猪的小推车序号、猪的大小、猪在这群猪里的排行、屠宰的标志
-                mediaCodec.queueInputBuffer(inputIndex, 0, len, System.currentTimeMillis() / 1000, 0);
+                mediaCodec.queueInputBuffer(inputIndex, 0, len, System.currentTimeMillis(), 0);
             }
 
             //工厂已经把猪运进去了，但是是否加工成火腿肠还是未知的，我们要通过装火腿肠的筐来判断是否已经加工完了
@@ -121,19 +133,18 @@ public class AudioCodec extends Thread {
                 byte[] newData = new byte[encodeBufferInfo.size];
                 outputBuffer.get(newData);
 
-                if (startTime == 0) {
-                    startTime = encodeBufferInfo.presentationTimeUs / 1000;
-                }
+
                 rtmpPacket = new RTMPPacket();
                 rtmpPacket.setBuffer(newData);
                 rtmpPacket.setType(RTMPPacket.AUDIO_TYPE);
-                long tms = encodeBufferInfo.presentationTimeUs / 1000 - startTime;
+                long tms = encodeBufferInfo.presentationTimeUs - startTime;
+                Log.i(LOG_TAG, "音频 tms:" + tms);
                 rtmpPacket.setTms(tms);
                 screenLive.addPacket(rtmpPacket);
 
                 //把筐放回工厂里面
                 mediaCodec.releaseOutputBuffer(outputIndex, false);
-                outputIndex =  mediaCodec.dequeueOutputBuffer(encodeBufferInfo, 0);
+                outputIndex = mediaCodec.dequeueOutputBuffer(encodeBufferInfo, 0);
             }
         }
 
@@ -149,5 +160,9 @@ public class AudioCodec extends Thread {
             audioRecord = null;
         }
         startTime = 0;
+    }
+
+    public void stopAudio() {
+        isRecoding = false;
     }
 }

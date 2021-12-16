@@ -6,6 +6,8 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
+import com.example.rtmpdemo.util.LiveTaskManager;
+
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
@@ -44,7 +46,7 @@ public class ScreenLive extends Thread {
     //开启推送模式
     public void startLive(String url) {
         this.url = url;
-        start();
+        LiveTaskManager.getInstance().execute(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -63,8 +65,8 @@ public class ScreenLive extends Thread {
                 e.printStackTrace();
             }
             if (packet != null && packet.getBuffer() != null && packet.getBuffer().length != 0) {
-                Log.i(LOG_TAG, "获取到编码数据，开始推送:" + packet.getTms());
-                sendData(packet.getBuffer(), packet.getBuffer().length, packet.getTms());
+                Log.i(LOG_TAG, "获取到编码数据，开始推送:" + packet.getTms() );
+                sendData(packet.getBuffer(), packet.getBuffer().length, packet.getTms(), packet.getType());
             }
         }
 
@@ -83,7 +85,7 @@ public class ScreenLive extends Thread {
     private native boolean connect(String url);
 
     //推送数据
-    private native boolean sendData(byte[] data, int len, long tms);
+    private native boolean sendData(byte[] data, int len, long tms, int type);
 
 
 }

@@ -12,14 +12,14 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.annotation.RequiresApi;
+
 import com.example.App;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import androidx.annotation.RequiresApi;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
 
@@ -123,9 +123,14 @@ public class VideoCodec extends Thread {
                     //将数据读取到outData中
                     byte[] outData = new byte[encodeBufferInfo.size];
                     outputBuffer.get(outData);
-//                        fos.write(outData, 0, outData.length);
-                    RTMPPacket rtmpPacket = new RTMPPacket(outData, encodeBufferInfo.presentationTimeUs / 1000 - startTime);
+
+                    RTMPPacket rtmpPacket = new RTMPPacket();
+                    rtmpPacket.setBuffer(outData);
+                    rtmpPacket.setType(RTMPPacket.VIDEO_TYPE);
+                    long tms = encodeBufferInfo.presentationTimeUs / 1000 - startTime;
+                    rtmpPacket.setTms(tms);
                     screenLive.addPacket(rtmpPacket);
+
                     //把筐放回工厂里面
                     mediaCodec.releaseOutputBuffer(outputIndex, false);
                 }

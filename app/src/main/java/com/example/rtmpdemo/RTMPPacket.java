@@ -9,6 +9,8 @@ public class RTMPPacket {
 
     public static final int AUDIO_TYPE = 0;
     public static final int VIDEO_TYPE = 1;
+    public static final int AUDIO_HEAD_TYPE = 2;
+
     private int type;
 
     public RTMPPacket() {
@@ -24,6 +26,10 @@ public class RTMPPacket {
 
     public void setBuffer(byte[] newData) {
         this.buffer = newData;
+    }
+
+    public int getType() {
+        return type;
     }
 
     public void setType(int type) {

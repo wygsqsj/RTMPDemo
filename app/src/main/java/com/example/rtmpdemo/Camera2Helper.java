@@ -179,7 +179,6 @@ public class Camera2Helper {
                         if (cameraCodec == null) {
                             cameraCodec = new CameraCodec(screenLive, Camera2Helper.this, planes[0].getRowStride(), mPreviewSize.getHeight(),
                                     15, mPreviewSize.getHeight() * mPreviewSize.getWidth() * 3 / 2);
-                            cameraCodec.start();
                         }
 //                        coverThread.onPreview(y, u, v, mPreviewSize, planes[0].getRowStride());
 

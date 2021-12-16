@@ -26,9 +26,13 @@ Live *live = NULL;
 
 int sendVideo(int8_t *buf, int len, long tms);
 
+int sendAudio(int8_t *buf, int len, long tms,int type);
+
 void saveSPSPPS(int8_t *buf, int len, Live *live);
 
 RTMPPacket *createSPSPPSPacket(Live *live);
+
+RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms,int type, Live *live);
 
 int sendPacket(RTMPPacket *packet);
 
@@ -81,7 +85,7 @@ Java_com_example_rtmpdemo_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring 
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_example_rtmpdemo_ScreenLive_sendData(JNIEnv *env, jobject thiz, jbyteArray data_, jint len,
-                                              jlong tms) {
+                                              jlong tms, jint type) {
     // 确保不会取出空的 RTMP 数据包
     if (!data_) {
         return 0;
@@ -89,15 +93,54 @@ Java_com_example_rtmpdemo_ScreenLive_sendData(JNIEnv *env, jobject thiz, jbyteAr
     int ret;
     int8_t *data = env->GetByteArrayElements(data_, NULL);
 
-    ret = sendVideo(data, len, tms);
+    if(type == 1){//视频
+        LOGI("开始发送视频 %d",len);
+        ret = sendVideo(data, len, tms);
+    }else{//音频
+        LOGI("开始发送音频 %d",len);
+        ret = sendAudio(data, len, tms,type);
+    }
 
     env->ReleaseByteArrayElements(data_, data, 0);
-
     return ret;
 }
 
 /**
- *把pps和sps缓存下来，放在每一个I帧前面
+*发送音频
+*/
+int sendAudio(int8_t *buf, int len, long tms,int type) {
+  RTMPPacket *packet = createAudioPacket(buf,len,tms,type,live);
+  int ret = sendPacket(packet);
+  return ret;
+}
+
+//创建audio包
+RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms,int type,Live *live){
+    int body_size = len+2;
+    RTMPPacket *packet = (RTMPPacket *)malloc(sizeof(RTMPPacket));
+    RTMPPacket_Alloc(packet,body_size);
+    packet->m_body[0] = 0xAF;
+    if(type == 2){//音频头
+        packet->m_body[1] = 0x00;
+    }else{//正常数据
+        packet->m_body[1] = 0x01;
+    }
+    memcpy(&packet->m_body[2],buf,len);
+    //设置音频类型
+    packet->m_packetType = RTMP_PACKET_TYPE_AUDIO;
+    packet->m_nBodySize = body_size;
+    //通道值，音视频不能相同
+    packet->m_nChannel = 0x05;
+    packet->m_nTimeStamp = tms;
+    packet->m_hasAbsTimestamp = 0;
+    packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
+    packet->m_nInfoField2 = live->rtmp->m_stream_id;
+    return packet;
+}
+
+/**
+ *发送帧数据到rtmp服务器
+ *把pps和sps缓存下来，放在每一个I帧前面，
  */
 int sendVideo(int8_t *buf, int len, long tms) {
     int ret = 0;

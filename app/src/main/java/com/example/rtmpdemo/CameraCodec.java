@@ -7,6 +7,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.example.rtmpdemo.util.LiveTaskManager;
+
 import java.nio.ByteBuffer;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
@@ -41,6 +43,7 @@ public class CameraCodec extends Thread {
         this.framerate = framerate;
         this.biterate = biterate;
         this.screenLive = screenLive;
+        LiveTaskManager.getInstance().execute(this);
     }
 
 
@@ -67,6 +70,9 @@ public class CameraCodec extends Thread {
             //启动编码器
             encodeCodec.start();
             while (isEncode || !inOutFinish) {
+                if (startTime == 0) {
+                    startTime = System.currentTimeMillis();//得到时间，毫秒
+                }
                 //获取当前的yuv数据
                 if (camera2Helper != null && !camera2Helper.getYUVQueue().isEmpty()) {
                     //从猪肉工厂获取装猪的小推车，填充数据后发送到猪肉工厂进行处理
@@ -106,6 +112,7 @@ public class CameraCodec extends Thread {
                     }
                 }
 
+
                 //工厂已经把猪运进去了，但是是否加工成火腿肠还是未知的，我们要通过装火腿肠的筐来判断是否已经加工完了
                 int outputIndex = encodeCodec.dequeueOutputBuffer(encodeBufferInfo, 10000);//返回当前筐的标记
                 if (outputIndex >= 0) {
@@ -119,20 +126,16 @@ public class CameraCodec extends Thread {
                     } else {
                         outputBuffer = outputBuffers[outputIndex];
                     }
-                    if (startTime == 0) {
-                        startTime = System.currentTimeMillis();//得到时间，毫秒
-                    }
+
                     //将数据读取到outData中
                     byte[] outData = new byte[encodeBufferInfo.size];
                     outputBuffer.get(outData);
 
-                    if (startTime == 0) {
-                        startTime = encodeBufferInfo.presentationTimeUs / 1000;
-                    }
                     RTMPPacket rtmpPacket = new RTMPPacket();
                     rtmpPacket.setBuffer(outData);
                     rtmpPacket.setType(RTMPPacket.VIDEO_TYPE);
-                    long tms = encodeBufferInfo.presentationTimeUs / 1000 - startTime;
+                    long tms = encodeBufferInfo.presentationTimeUs - startTime;
+                    Log.i(LOG_TAG, "视频 tms:" + tms);
                     rtmpPacket.setTms(tms);
                     screenLive.addPacket(rtmpPacket);
 

@@ -34,5 +34,5 @@ target_link_libraries(
         native-lib
         x264-lib
         rtmp
-#        x264
+        x264
         ${log-lib})

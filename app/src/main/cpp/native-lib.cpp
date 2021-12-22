@@ -38,46 +38,7 @@ int sendPacket(RTMPPacket *packet);
 
 RTMPPacket *createVideoPacket(int8_t *buf, int len, long tms, Live *live);
 
-extern "C"
-JNIEXPORT jboolean JNICALL
-Java_com_example_rtmpdemo_mediacodec_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring url_) {
-    //链接rtmp服务器
-    int ret = 0;
-    const char *url = env->GetStringUTFChars(url_, 0);
-    //不断重试，链接服务器
-    do {
-        //初始化live数据
-        live = (Live *) malloc(sizeof(Live));
-        //清空live数据
-        memset(live, 0, sizeof(Live));
-        //初始化RTMP,申请内存
-        live->rtmp = RTMP_Alloc();
-        RTMP_Init(live->rtmp);
-        //设置超时时间
-        live->rtmp->Link.timeout = 10;
-        LOGI("connect %s", url);
-        //设置地址
-        if (!(ret = RTMP_SetupURL(live->rtmp, (char *) url))) break;
-        //设置输出模式
-        RTMP_EnableWrite(live->rtmp);
-        LOGI("connect Connect");
-        //连接
-        if (!(ret = RTMP_Connect(live->rtmp, 0))) break;
-        LOGI("connect ConnectStream");
-        //连接流
-        if (!(ret = RTMP_ConnectStream(live->rtmp, 0))) break;
-        LOGI("connect 成功");
-    } while (0);
 
-    //连接失败，释放内存
-    if (!ret && live) {
-        free(live);
-        live = nullptr;
-    }
-
-    env->ReleaseStringUTFChars(url_, url);
-    return ret;
-}
 
 
 
@@ -298,3 +259,43 @@ void saveSPSPPS(int8_t *buf, int len, Live *live) {
     }
 }
 
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_example_rtmpdemo_mediacodec_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring url_) {
+    //链接rtmp服务器
+    int ret = 0;
+    const char *url = env->GetStringUTFChars(url_, 0);
+    //不断重试，链接服务器
+    do {
+        //初始化live数据
+        live = (Live *) malloc(sizeof(Live));
+        //清空live数据
+        memset(live, 0, sizeof(Live));
+        //初始化RTMP,申请内存
+        live->rtmp = RTMP_Alloc();
+        RTMP_Init(live->rtmp);
+        //设置超时时间
+        live->rtmp->Link.timeout = 10;
+        LOGI("connect %s", url);
+        //设置地址
+        if (!(ret = RTMP_SetupURL(live->rtmp, (char *) url))) break;
+        //设置输出模式
+        RTMP_EnableWrite(live->rtmp);
+        LOGI("connect Connect");
+        //连接
+        if (!(ret = RTMP_Connect(live->rtmp, 0))) break;
+        LOGI("connect ConnectStream");
+        //连接流
+        if (!(ret = RTMP_ConnectStream(live->rtmp, 0))) break;
+        LOGI("connect 成功");
+    } while (0);
+
+    //连接失败，释放内存
+    if (!ret && live) {
+        free(live);
+        live = nullptr;
+    }
+
+    env->ReleaseStringUTFChars(url_, url);
+    return ret;
+}

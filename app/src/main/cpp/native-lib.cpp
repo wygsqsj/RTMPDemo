@@ -26,13 +26,13 @@ Live *live = NULL;
 
 int sendVideo(int8_t *buf, int len, long tms);
 
-int sendAudio(int8_t *buf, int len, long tms,int type);
+int sendAudio(int8_t *buf, int len, long tms, int type);
 
 void saveSPSPPS(int8_t *buf, int len, Live *live);
 
 RTMPPacket *createSPSPPSPacket(Live *live);
 
-RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms,int type, Live *live);
+RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms, int type, Live *live);
 
 int sendPacket(RTMPPacket *packet);
 
@@ -40,7 +40,7 @@ RTMPPacket *createVideoPacket(int8_t *buf, int len, long tms, Live *live);
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_example_rtmpdemo_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring url_) {
+Java_com_example_rtmpdemo_mediacodec_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring url_) {
     //链接rtmp服务器
     int ret = 0;
     const char *url = env->GetStringUTFChars(url_, 0);
@@ -84,8 +84,9 @@ Java_com_example_rtmpdemo_ScreenLive_connect(JNIEnv *env, jobject thiz, jstring 
 //发送数据到rtmp服务器端
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_example_rtmpdemo_ScreenLive_sendData(JNIEnv *env, jobject thiz, jbyteArray data_, jint len,
-                                              jlong tms, jint type) {
+Java_com_example_rtmpdemo_mediacodec_ScreenLive_sendData(JNIEnv *env, jobject thiz,
+                                                         jbyteArray data_, jint len,
+                                                         jlong tms, jint type) {
     // 确保不会取出空的 RTMP 数据包
     if (!data_) {
         return 0;
@@ -93,12 +94,12 @@ Java_com_example_rtmpdemo_ScreenLive_sendData(JNIEnv *env, jobject thiz, jbyteAr
     int ret;
     int8_t *data = env->GetByteArrayElements(data_, NULL);
 
-    if(type == 1){//视频
-        LOGI("开始发送视频 %d",len);
+    if (type == 1) {//视频
+        LOGI("开始发送视频 %d", len);
         ret = sendVideo(data, len, tms);
-    }else{//音频
-        LOGI("开始发送音频 %d",len);
-        ret = sendAudio(data, len, tms,type);
+    } else {//音频
+        LOGI("开始发送音频 %d", len);
+        ret = sendAudio(data, len, tms, type);
     }
 
     env->ReleaseByteArrayElements(data_, data, 0);
@@ -108,24 +109,24 @@ Java_com_example_rtmpdemo_ScreenLive_sendData(JNIEnv *env, jobject thiz, jbyteAr
 /**
 *发送音频
 */
-int sendAudio(int8_t *buf, int len, long tms,int type) {
-  RTMPPacket *packet = createAudioPacket(buf,len,tms,type,live);
-  int ret = sendPacket(packet);
-  return ret;
+int sendAudio(int8_t *buf, int len, long tms, int type) {
+    RTMPPacket *packet = createAudioPacket(buf, len, tms, type, live);
+    int ret = sendPacket(packet);
+    return ret;
 }
 
 //创建audio包
-RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms,int type,Live *live){
-    int body_size = len+2;
-    RTMPPacket *packet = (RTMPPacket *)malloc(sizeof(RTMPPacket));
-    RTMPPacket_Alloc(packet,body_size);
+RTMPPacket *createAudioPacket(int8_t *buf, int len, long tms, int type, Live *live) {
+    int body_size = len + 2;
+    RTMPPacket *packet = (RTMPPacket *) malloc(sizeof(RTMPPacket));
+    RTMPPacket_Alloc(packet, body_size);
     packet->m_body[0] = 0xAF;
-    if(type == 2){//音频头
+    if (type == 2) {//音频头
         packet->m_body[1] = 0x00;
-    }else{//正常数据
+    } else {//正常数据
         packet->m_body[1] = 0x01;
     }
-    memcpy(&packet->m_body[2],buf,len);
+    memcpy(&packet->m_body[2], buf, len);
     //设置音频类型
     packet->m_packetType = RTMP_PACKET_TYPE_AUDIO;
     packet->m_nBodySize = body_size;
@@ -296,3 +297,4 @@ void saveSPSPPS(int8_t *buf, int len, Live *live) {
         }
     }
 }
+

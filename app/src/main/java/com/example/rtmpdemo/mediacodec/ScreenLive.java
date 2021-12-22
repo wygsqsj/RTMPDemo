@@ -1,14 +1,14 @@
-package com.example.rtmpdemo;
+package com.example.rtmpdemo.mediacodec;
 
 import android.media.projection.MediaProjection;
 import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
 import com.example.rtmpdemo.util.LiveTaskManager;
 
 import java.util.concurrent.LinkedBlockingQueue;
+
+import androidx.annotation.RequiresApi;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
 

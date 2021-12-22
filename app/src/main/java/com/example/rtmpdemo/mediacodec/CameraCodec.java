@@ -1,4 +1,4 @@
-package com.example.rtmpdemo;
+package com.example.rtmpdemo.mediacodec;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;

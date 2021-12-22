@@ -1,4 +1,4 @@
-package com.example.rtmpdemo;
+package com.example.rtmpdemo.mediacodec;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -65,7 +65,6 @@ public class Camera2Helper {
     private byte[] y;
     private byte[] u;
     private byte[] v;
-    private CoverThread coverThread;
     private ReentrantLock lock = new ReentrantLock();
     private LinkedBlockingDeque<byte[]> deque = new LinkedBlockingDeque<>();
     private CameraCodec cameraCodec;
@@ -172,15 +171,10 @@ public class Camera2Helper {
                         planes[0].getBuffer().get(y);
                         planes[1].getBuffer().get(u);
                         planes[2].getBuffer().get(v);
-                        if (coverThread == null) {
-                            coverThread = new CoverThread();
-                            coverThread.start();
-                        }
                         if (cameraCodec == null) {
                             cameraCodec = new CameraCodec(screenLive, Camera2Helper.this, planes[0].getRowStride(), mPreviewSize.getHeight(),
                                     15, mPreviewSize.getHeight() * mPreviewSize.getWidth() * 3 / 2);
                         }
-//                        coverThread.onPreview(y, u, v, mPreviewSize, planes[0].getRowStride());
 
                         if (nv12 == null) {
                             int length = planes[0].getRowStride() * mPreviewSize.getHeight() * 3 / 2;
@@ -361,49 +355,5 @@ public class Camera2Helper {
 
     public interface CameraYUVReadListener {
         public void onPreview(byte[] y, byte[] u, byte[] v, Size width, int stride);
-    }
-
-    /**
-     * 将yuv 数据 转化成 nv12
-     */
-    class CoverThread extends Thread {
-        private byte[] y;
-        private byte[] u;
-        private byte[] v;
-        private byte[] nv21, nv12, nv21_rotated;
-        int stride, height;
-
-        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-        public void onPreview(byte[] y, byte[] u, byte[] v, Size previewSize, int stride) {
-            if (nv12 == null) {
-                this.stride = stride;
-                //存储长度YUV加起来Y 1 uv0.5
-                this.height = previewSize.getHeight();
-                int length = stride * previewSize.getHeight() * 3 / 2;
-                Log.i(LOG_TAG, "stride" + stride);
-                Log.i(LOG_TAG, "Size w h " + previewSize.getWidth() + " " + previewSize.getHeight());
-                Log.i(LOG_TAG, "存储长度" + length);
-                nv21 = new byte[length];
-                nv21_rotated = new byte[length];
-                nv12 = new byte[length];
-            }
-
-            this.y = y;
-            this.u = u;
-            this.v = v;
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            if (y != null) {
-                ImageUtil.yuvToNv21(y, u, v, nv21, stride, height);
-                ImageUtil.revolveYuv(nv21, nv21_rotated, stride, height);
-                ImageUtil.nv21ToNv12(nv21_rotated, nv12, stride, height);
-                if (deque != null) {
-                    deque.add(nv12);
-                }
-            }
-        }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.rtmpdemo;
+package com.example.rtmpdemo.mediacodec;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -14,7 +14,7 @@ import com.example.rtmpdemo.util.LiveTaskManager;
 import java.nio.ByteBuffer;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
-import static com.example.rtmpdemo.RTMPPacket.AUDIO_HEAD_TYPE;
+import static com.example.rtmpdemo.mediacodec.RTMPPacket.AUDIO_HEAD_TYPE;
 
 /**
  * 采集音频数据推流到服务器

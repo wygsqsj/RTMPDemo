@@ -1,4 +1,4 @@
-package com.example.rtmpdemo;
+package com.example.rtmpdemo.mediacodec;
 
 /**
  * RTMP数据包

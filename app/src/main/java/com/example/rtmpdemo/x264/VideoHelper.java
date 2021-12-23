@@ -134,8 +134,8 @@ public class VideoHelper {
         mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
         if (isLive && livePush != null) {
-//            livePush.native_setVideoEncInfo(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
-//                    15, mPreviewSize.getWidth() * mPreviewSize.getHeight() * 3 / 2);
+            livePush.native_setVideoEncInfo(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
+                    15, mPreviewSize.getWidth() * mPreviewSize.getHeight() * 3 / 2);
         }
 
         //监听数据何时可用,第二个参数是个Handler,用于回调给当前的线程
@@ -187,7 +187,7 @@ public class VideoHelper {
                         ImageUtil.nv21ToNv12(nv21_rotated, nv12, planes[0].getRowStride(), mPreviewSize.getHeight());
 
                         if (isLive && livePush != null) {
-//                            livePush.native_pushVideo(nv12);
+                            livePush.native_pushVideo(nv12);
                         }
                     }
                     lock.unlock();

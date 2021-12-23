@@ -40,8 +40,6 @@ RTMPPacket *createVideoPacket(int8_t *buf, int len, long tms, Live *live);
 
 
 
-
-
 //发送数据到rtmp服务器端
 extern "C"
 JNIEXPORT jboolean JNICALL

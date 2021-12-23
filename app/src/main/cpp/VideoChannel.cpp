@@ -1,7 +1,7 @@
 //
 // Created by DELL on 2021/12/22.
 //
-
+#include <stdint.h>
 #include <x264.h>
 #include "VideoChannel.h"
 
@@ -72,5 +72,17 @@ void VideoChannel::createX264Encode(int width, int height, int fps, int bitrate)
     pic_in = new x264_picture_t;
     //初始化缓冲区大小
     x264_picture_alloc(pic_in, X264_CSP_I420, width, height);
+    LOGI("设置完成");
+}
+
+
+void VideoChannel::encodeData(int8_t *data) {
 
 }
+
+VideoChannel::VideoChannel() {
+
+}
+
+
+VideoChannel::~VideoChannel() = default;

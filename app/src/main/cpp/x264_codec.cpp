@@ -1,33 +1,90 @@
 #include <jni.h>
 #include <string>
-#include <android/log.h>
-//#include "VideoChannel.h"
+#include "VideoChannel.h"
 #include "safeQueue.h"
-
-#define LOG_TAG    "音视频"
-#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-
 //导入rtmp
 extern "C" {
-    #include "librtmp/rtmp.h"
+#include "librtmp/rtmp.h"
 }
 
 
-//VideoChannel *videoChannel = nullptr;
+
+void *start(void *args);
+
+void releasePackets(RTMPPacket *pPacket);
+
 int isStart = 0;
 pthread_t pid;//子线程对象
 //队列
 SafeQueue<RTMPPacket *> packets;
 //推流标志
 int readyPushing = 0;
-
 uint32_t start_time;
 
-void releasePackets(RTMPPacket *pPacket);
+VideoChannel *videoChannel = nullptr;
+
+
+//初始化编码层
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1init(JNIEnv *env, jobject thiz) {
+    videoChannel = new VideoChannel;
+}
+
+//初始化x264
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1setVideoEncInfo(JNIEnv *env, jobject thiz,
+                                                                jint width, jint height, jint fps,
+                                                                jint bitrate) {
+    if (videoChannel) {
+        videoChannel->createX264Encode(width, height, fps, bitrate);
+    }
+}
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1start(JNIEnv *env, jobject thiz, jstring rtmpUrl) {
+    //连接rtmp服务器
+    if (isStart) {
+        return;
+    }
+    const char *path = env->GetStringUTFChars(rtmpUrl, 0);
+    char *url = new char[strlen(path) + 1];
+    strcpy(url, path);
+    isStart = 1;
+    //开启子线程连接服务器
+    pthread_create(&pid, 0, start, url);
+
+    env->ReleaseStringUTFChars(rtmpUrl, path);
+}
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1pushVideo(JNIEnv *env, jobject thiz,
+                                                          jbyteArray data) {
+
+}
+
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1stop(JNIEnv *env, jobject thiz) {
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1release(JNIEnv *env, jobject thiz) {
+}
+
 
 void *start(void *args) {
     char *url = static_cast<char *>(args);
-    RTMP *rtmp = 0;
+    RTMP *rtmp = nullptr;
     //不断重试，链接服务器
     do {
         //初始化RTMP,申请内存
@@ -58,10 +115,10 @@ void *start(void *args) {
         //从队列中取出数据发送
         readyPushing = 1;
         start_time = RTMP_GetTime();
-//        packets.setWork(1);
+        packets.setWork(1);
         RTMPPacket *packet = 0;
         while (isStart) {
-            packets.dequeue(packet);
+            packets.pop(packet);
             if (!isStart) {
                 break;
             }
@@ -96,61 +153,4 @@ void releasePackets(RTMPPacket *packet) {
         delete packet;
         packet = nullptr;
     }
-}
-
-//初始化编码层
-extern "C"
-
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1init(JNIEnv *env, jobject thiz) {
-//    videoChannel = new VideoChannel;
-}
-
-//初始化x264
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1setVideoEncInfo(JNIEnv *env, jobject thiz,
-                                                                jint width, jint height, jint fps,
-                                                                jint bitrate) {
-   // if (videoChannel) {
-     //   videoChannel->createX264Encode(width, height, fps, bitrate);
-    //}
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1start(JNIEnv *env, jobject thiz, jstring rtmpUrl) {
-    //连接rtmp服务器
-    if (isStart) {
-        return;
-    }
-    const char *path = env->GetStringUTFChars(rtmpUrl, 0);
-    char *url = new char[strlen(path) + 1];
-    strcpy(url, path);
-    isStart = 1;
-    //开启子线程连接服务器
-    pthread_create(&pid, 0, start, url);
-
-    env->ReleaseStringUTFChars(rtmpUrl, path);
-
-}
-
-
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1pushVideo(JNIEnv *env, jobject thiz,
-                                                          jbyteArray data) {
-    // TODO: implement native_pushVideo()
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1stop(JNIEnv *env, jobject thiz) {
-
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_example_rtmpdemo_x264_LivePush_native_1release(JNIEnv *env, jobject thiz) {
 }

@@ -2,6 +2,7 @@ package com.example.rtmpdemo.x264;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
@@ -25,13 +26,13 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 
+import com.example.App;
 import com.example.rtmpdemo.util.ImageUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.ReentrantLock;
 
 import androidx.annotation.NonNull;
@@ -47,7 +48,7 @@ public class VideoHelper {
 
     private LivePush livePush;
     private TextureView textureView;
-    private Context context;
+    private Activity context;
     private CameraManager mCameraManager;
     private String mBackCameraId, mFrontCameraId;
     private CameraCharacteristics mBackCameraCharacteristics, mFrontCameraCharacteristics;
@@ -69,7 +70,7 @@ public class VideoHelper {
     private byte[] nv21, nv12, nv21_rotated;
     private boolean isLive = true;
 
-    public VideoHelper(Context context, TextureView textureView, LivePush livePush) {
+    public VideoHelper(Activity context, TextureView textureView, LivePush livePush) {
         this.context = context;
         this.textureView = textureView;
         this.livePush = livePush;
@@ -134,7 +135,7 @@ public class VideoHelper {
         mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
         if (isLive && livePush != null) {
-            livePush.native_setVideoEncInfo(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
+            livePush.native_setVideoEncInfo(mPreviewSize.getHeight(), mPreviewSize.getWidth(),
                     15, mPreviewSize.getWidth() * mPreviewSize.getHeight() * 3 / 2);
         }
 
@@ -187,7 +188,12 @@ public class VideoHelper {
                         ImageUtil.nv21ToNv12(nv21_rotated, nv12, planes[0].getRowStride(), mPreviewSize.getHeight());
 
                         if (isLive && livePush != null) {
-                            livePush.native_pushVideo(nv12);
+                            context.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    livePush.native_pushVideo(nv12);
+                                }
+                            });
                         }
                     }
                     lock.unlock();

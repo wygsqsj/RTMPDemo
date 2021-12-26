@@ -1,5 +1,11 @@
 package com.example.rtmpdemo.x264;
 
+import android.util.Log;
+
+import com.example.rtmpdemo.util.FileUtil;
+
+import static com.example.rtmpdemo.MainActivity.LOG_TAG;
+
 /**
  * 软编推流，与native连接的类
  */
@@ -21,8 +27,13 @@ public class LivePush {
     public void stopLive() {
         native_stop();
         native_release();
+        FileUtil.destory();
     }
 
+    private void saveData(byte[] data) {
+        Log.i(LOG_TAG, "java 层收到消息" + data.length);
+        FileUtil.writeBytes(data);
+    }
 
     public native void native_init();
 

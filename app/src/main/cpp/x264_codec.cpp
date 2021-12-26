@@ -8,10 +8,10 @@ extern "C" {
 }
 
 
-
 void *start(void *args);
 
 void releasePackets(RTMPPacket *pPacket);
+
 
 int isStart = 0;
 pthread_t pid;//子线程对象
@@ -23,12 +23,25 @@ uint32_t start_time;
 
 VideoChannel *videoChannel = nullptr;
 
+//编码层回调此方法，将编码好的数据放到队列中
+void callBack(RTMPPacket *packet) {
+    if (packet) {
+        if (packets.size() > 50) {
+            packets.clear();
+        }
+
+        packet->m_nTimeStamp = RTMP_GetTime() - start_time;
+        packets.push(packet);
+    }
+}
+
 
 //初始化编码层
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1init(JNIEnv *env, jobject thiz) {
     videoChannel = new VideoChannel;
+    videoChannel->setVideoCallBack(callBack);
 }
 
 //初始化x264
@@ -64,8 +77,16 @@ Java_com_example_rtmpdemo_x264_LivePush_native_1start(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1pushVideo(JNIEnv *env, jobject thiz,
-                                                          jbyteArray data) {
+                                                          jbyteArray data_) {
 
+    //没有实例化编码或者rtmp没连接成功时退出
+    if (!videoChannel || !readyPushing) {
+        return;
+    }
+    //转换成数组进行编码
+    jbyte *data = env->GetByteArrayElements(data_, NULL);
+    videoChannel->encodeData(data);
+    env->ReleaseByteArrayElements(data_, data, 0);
 }
 
 

@@ -27,6 +27,7 @@ public class X264Activity extends AppCompatActivity implements TextureView.Surfa
     private AudioHelper audioHelper;
     private LivePush livePush;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

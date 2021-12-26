@@ -48,7 +48,7 @@ public class VideoHelper {
 
     private LivePush livePush;
     private TextureView textureView;
-    private Activity context;
+    private Context context;
     private CameraManager mCameraManager;
     private String mBackCameraId, mFrontCameraId;
     private CameraCharacteristics mBackCameraCharacteristics, mFrontCameraCharacteristics;
@@ -70,7 +70,7 @@ public class VideoHelper {
     private byte[] nv21, nv12, nv21_rotated;
     private boolean isLive = true;
 
-    public VideoHelper(Activity context, TextureView textureView, LivePush livePush) {
+    public VideoHelper(Context context, TextureView textureView, LivePush livePush) {
         this.context = context;
         this.textureView = textureView;
         this.livePush = livePush;
@@ -185,15 +185,9 @@ public class VideoHelper {
                         }
                         ImageUtil.yuvToNv21(y, u, v, nv21, planes[0].getRowStride(), mPreviewSize.getHeight());
                         ImageUtil.revolveYuv(nv21, nv21_rotated, planes[0].getRowStride(), mPreviewSize.getHeight());
-                        ImageUtil.nv21ToNv12(nv21_rotated, nv12, planes[0].getRowStride(), mPreviewSize.getHeight());
 
                         if (isLive && livePush != null) {
-                            context.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    livePush.native_pushVideo(nv12);
-                                }
-                            });
+                            livePush.native_pushVideo(nv21_rotated);
                         }
                     }
                     lock.unlock();

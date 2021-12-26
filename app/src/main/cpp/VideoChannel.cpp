@@ -80,7 +80,7 @@ void VideoChannel::createX264Encode(int width, int height, int fps, int bitrate)
 
 
 /**
- * 将yuv数据编码成h264码流
+ * 将java层传递的yuv（NV21）数据编码成h264码流
  * @param data 输入的yuv数据
  * 将 y u v分别放到单个通道中，X264可以将多个帧的通道同时存入，例如I P P三帧的Y数据放如x264的y通道
  * 所以x264框架可以一次性输出好几个NAL单元
@@ -92,9 +92,9 @@ void VideoChannel::encodeData(int8_t *data) {
     memcpy(pic_in->img.plane[0], data, mYSize);
     // 取出u v数据放入通道
     for (int i = 0; i < mUVSize; i++) {
-        //u数据 nv12类型 u在前面为奇数
+        //img.plane[1]里面放的是u数据；我们的yuv格式是NV21,data[1]是U数据
         *(pic_in->img.plane[1] + i) = *(data + mYSize + i * 2 + 1);
-        //v数据 nv12类型 v在后面为偶数
+        //img.plane[2]里面放的是V数据；data[0]是V数据
         *(pic_in->img.plane[2] + i) = *(data + mYSize + i * 2);
     }
 

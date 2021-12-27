@@ -8,12 +8,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
 import com.example.rtmpdemo.databinding.ActivityMainBinding;
 import com.example.rtmpdemo.mediacodec.MediaCodecActivity;
+import com.example.rtmpdemo.x264.CameraXActivity;
 import com.example.rtmpdemo.x264.X264Activity;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraX;
+import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,6 +50,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void x264Start(View view) {
         Intent intent = new Intent(this, X264Activity.class);
+        this.startActivity(intent);
+    }
+
+    public void cameraXStart(View view) {
+        Intent intent = new Intent(this, CameraXActivity.class);
         this.startActivity(intent);
     }
 }

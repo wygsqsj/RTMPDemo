@@ -21,5 +21,11 @@
         android:onClick="x264Start"
         android:text="软编" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="cameraXStart"
+        android:text="cameraX软编" />
+
 
 </LinearLayout>

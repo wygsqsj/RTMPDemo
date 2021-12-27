@@ -15,6 +15,7 @@ void releasePackets(RTMPPacket *pPacket);
 
 int isStart = 0;
 pthread_t pid;//子线程对象
+RTMP *rtmp = nullptr;
 //队列
 SafeQueue<RTMPPacket *> packets;
 //推流标志
@@ -95,17 +96,29 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1stop(JNIEnv *env, jobject thiz) {
 
+    isStart = 0;//关闭rtmp
+
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1release(JNIEnv *env, jobject thiz) {
+    if (videoChannel) {
+        delete (videoChannel);
+        videoChannel = nullptr;
+    }
+    
+    if (rtmp) {
+        RTMP_Close(rtmp);
+        RTMP_Free(rtmp);
+        rtmp = nullptr;
+        LOGI("释放RTMP");
+    }
 }
 
 
 void *start(void *args) {
     char *url = static_cast<char *>(args);
-    RTMP *rtmp = nullptr;
     //不断重试，链接服务器
     do {
         //初始化RTMP,申请内存
@@ -156,15 +169,10 @@ void *start(void *args) {
             }
         }
         releasePackets(packet);
-    } while (0);
-
-    if (rtmp) {
-        RTMP_Close(rtmp);
-        RTMP_Free(rtmp);
-    }
+    } while (false);
 
     delete url;
-    return 0;
+    return nullptr;
 }
 
 //释放rtmp

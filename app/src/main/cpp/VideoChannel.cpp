@@ -10,6 +10,9 @@
 
 //初始化x264框架
 void VideoChannel::createX264Encode(int width, int height, int fps, int bitrate) {
+    // 加锁, 设置视频编码参数 与 编码互斥
+    pthread_mutex_lock(&mMutex);
+
     mWidth = width;
     mHeight = height;
     mFps = fps;
@@ -76,6 +79,8 @@ void VideoChannel::createX264Encode(int width, int height, int fps, int bitrate)
     //初始化缓冲区大小
     x264_picture_alloc(pic_in, X264_CSP_I420, width, height);
 
+    // 解锁, 设置视频编码参数 与 编码互斥
+    pthread_mutex_unlock(&mMutex);
 }
 
 
@@ -87,6 +92,8 @@ void VideoChannel::createX264Encode(int width, int height, int fps, int bitrate)
  *
  */
 void VideoChannel::encodeData(int8_t *data) {
+    // 加锁, 设置视频编码参数 与 编码互斥
+    pthread_mutex_lock(&mMutex);
 
     //将Y放入x264的y通道
     memcpy(pic_in->img.plane[0], data, mYSize);
@@ -134,17 +141,24 @@ void VideoChannel::encodeData(int8_t *data) {
         }
     }
 
+    // 解锁, 设置视频编码参数 与 编码互斥
+    pthread_mutex_unlock(&mMutex);
 }
 
 VideoChannel::VideoChannel() {
     // 初始化互斥锁, 设置视频编码参数 与 编码互斥
-//    pthread_mutex_init(&mMutex, 0);
+    pthread_mutex_init(&mMutex, 0);
 }
 
 
 VideoChannel::~VideoChannel() {
     // 销毁互斥锁, 设置视频编码参数 与 编码互斥
-//    pthread_mutex_destroy(&mMutex);
+    pthread_mutex_destroy(&mMutex);
+    if (mVideoCodec) {
+        x264_encoder_close(mVideoCodec);
+        mVideoCodec = nullptr;
+        LOGI("释放X264");
+    }
 }
 
 //发送sps和pps

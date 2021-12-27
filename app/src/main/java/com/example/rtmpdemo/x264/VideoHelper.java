@@ -135,6 +135,7 @@ public class VideoHelper {
         mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
         if (isLive && livePush != null) {
+            //
             livePush.native_setVideoEncInfo(mPreviewSize.getHeight(), mPreviewSize.getWidth(),
                     15, mPreviewSize.getWidth() * mPreviewSize.getHeight() * 3 / 2);
         }

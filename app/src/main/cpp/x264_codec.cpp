@@ -7,7 +7,6 @@ extern "C" {
 #include "librtmp/rtmp.h"
 }
 
-
 void *start(void *args);
 
 void releasePackets(RTMPPacket *pPacket);
@@ -107,7 +106,7 @@ Java_com_example_rtmpdemo_x264_LivePush_native_1release(JNIEnv *env, jobject thi
         delete (videoChannel);
         videoChannel = nullptr;
     }
-    
+
     if (rtmp) {
         RTMP_Close(rtmp);
         RTMP_Free(rtmp);

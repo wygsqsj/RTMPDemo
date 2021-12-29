@@ -11,6 +11,11 @@ include_directories(${CMAKE_SOURCE_DIR}/x264/${ANDROID_ABI}/include)
 #导入x264静态库
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/x264/${ANDROID_ABI}/lib")
 
+#导入faac头文件
+include_directories(${CMAKE_SOURCE_DIR}/faac/${ANDROID_ABI}/include)
+#导入faac静态库
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/faac/${ANDROID_ABI}/lib")
+
 #导入当前的cpp
 file(GLOB x264_soures *.cpp)
 
@@ -29,4 +34,5 @@ target_link_libraries(
         native-lib
         rtmp
         x264
+        faac
         ${log-lib})

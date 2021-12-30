@@ -65,8 +65,6 @@ class CameraXActivity : AppCompatActivity() {
         //发送层
         livePush = LivePush()
         livePush!!.startLive(MainActivity.RTMPURL)
-
-
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

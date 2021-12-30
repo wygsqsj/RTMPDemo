@@ -5,13 +5,13 @@
 # It is necessary for linking the library.
 
 # The name that we can dlopen(3).
-dlname='libfaac.so.0'
+dlname=''
 
 # Names of this library.
-library_names='libfaac.so.0.0.0 libfaac.so.0 libfaac.so'
+library_names=''
 
 # The name of the static archive.
-old_library=''
+old_library='libfaac.a'
 
 # Linker flags that cannot go in dependency_libs.
 inherited_linker_flags=''

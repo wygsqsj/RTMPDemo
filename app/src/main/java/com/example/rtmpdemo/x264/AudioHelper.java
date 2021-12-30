@@ -6,15 +6,13 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
-import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
 import com.example.rtmpdemo.util.LiveTaskManager;
 
-import java.nio.ByteBuffer;
-
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
-import static com.example.rtmpdemo.mediacodec.RTMPPacket.AUDIO_HEAD_TYPE;
 
 /**
  * 采集音频数据推流到服务器
@@ -23,6 +21,11 @@ public class AudioHelper extends Thread {
 
     private AudioRecord audioRecord;
     private boolean isRecoding;
+
+    /**
+     * 通道数
+     */
+    private final int channelCount = 2;
     /**
      * 采样率，现在能够保证在所有设备上使用的采样率是44100Hz, 但是其他的采样率（22050, 16000, 11025）在一些设备上也可以使用。
      */
@@ -30,34 +33,36 @@ public class AudioHelper extends Thread {
 
     /**
      * 声道数。CHANNEL_IN_MONO and CHANNEL_IN_STEREO. 其中CHANNEL_IN_MONO是可以保证在所有设备能够使用的。
+     * CHANNEL_IN_STEREO 双通道使用
      */
-    private int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
+    private int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
 
     /**
      * 返回的音频数据的格式。 ENCODING_PCM_8BIT, ENCODING_PCM_16BIT, and ENCODING_PCM_FLOAT.
      */
     private int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
 
-    //缓冲区
+    /**
+     * 缓冲区，此处的最小buffer只能作为参考值，不同于MedeaCodec我们可以直接使用此缓冲区大小，当设备不支持硬编时
+     * getMinBufferSize会返回-1，所以还要根据faac返回给我们的输入区大小来确定
+     * faac会返回给我们一个缓冲区大小，将他和此缓冲区大小比较之后采用最大值
+     */
     private int minBufferSize =
             AudioRecord.getMinBufferSize(SAMPLE_RATE_INHZ, CHANNEL_CONFIG, AUDIO_FORMAT);
     private long startTime;
     //传输层
     private LivePush livePush;
+    private byte[] buffer;
 
 
     public void startLive(LivePush livePush) {
         this.livePush = livePush;
-        MediaFormat mediaFormat =
-                MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, SAMPLE_RATE_INHZ, 1);
-
-        mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-
-        //比特率 声音中的比特率是指将模拟声音信号转换成数字声音信号后，单位时间内的二进制数据量，是间接衡量音频质量的一个指标
-        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 64000);
-        //最大的缓冲区大小，如果inputBuffer大小小于我们定义的缓冲区大小，可能报出缓冲区溢出异常
-//        mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024 * 8 * 8);
-
+        int inputByteNum = livePush.native_initAudioCodec(SAMPLE_RATE_INHZ, channelCount);
+        Log.i(LOG_TAG, "初始化faac完成，获取到输入缓冲区大小：" + inputByteNum);
+        minBufferSize = Math.max(inputByteNum, minBufferSize);
+        Log.i(LOG_TAG, "初始化faac完成，最终的输入缓冲区大小：" + minBufferSize);
+        //输入容器，AudioRecord获取到的音频数据
+        buffer = new byte[minBufferSize];
         try {
             //初始化录音器
             audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
@@ -73,25 +78,20 @@ public class AudioHelper extends Thread {
 
     @Override
     public void run() {
-        //发送音频头
-        RTMPPacket rtmpPacket = new RTMPPacket();
-        byte[] audioHeadInfo = {0x12, 0x08};
-        rtmpPacket.setBuffer(audioHeadInfo);
-        rtmpPacket.setType(AUDIO_HEAD_TYPE);
-//        livePush.addPacket(rtmpPacket);
-
         //开始录音
         audioRecord.startRecording();
         isRecoding = true;
-        MediaCodec.BufferInfo encodeBufferInfo = new MediaCodec.BufferInfo();//用于描述解码得到的byte[]数据的相关信息
-        byte[] buffer = new byte[minBufferSize];
 
         if (startTime == 0) {
             startTime = System.currentTimeMillis();//得到时间，毫秒
         }
 
+        //不断的读取数据
         while (isRecoding) {
-            int len = audioRecord.read(buffer, 0, minBufferSize);
+            int len = audioRecord.read(buffer, 0, buffer.length);
+            if (livePush != null && len > 0) {
+                livePush.native_pushAudio(buffer, len);
+            }
         }
 
         if (audioRecord != null) {

@@ -2,6 +2,7 @@
 #include <string>
 #include "VideoChannel.h"
 #include "safeQueue.h"
+#include "AudioChannel.h"
 //导入rtmp
 extern "C" {
 #include "librtmp/rtmp.h"
@@ -22,6 +23,7 @@ int readyPushing = 0;
 uint32_t start_time;
 
 VideoChannel *videoChannel = nullptr;
+AudioChannel *audioChannel = nullptr;
 
 //编码层回调此方法，将编码好的数据放到队列中
 void callBack(RTMPPacket *packet) {
@@ -29,7 +31,6 @@ void callBack(RTMPPacket *packet) {
         if (packets.size() > 50) {
             packets.clear();
         }
-
         packet->m_nTimeStamp = RTMP_GetTime() - start_time;
         packets.push(packet);
     }
@@ -94,9 +95,7 @@ Java_com_example_rtmpdemo_x264_LivePush_native_1pushVideo(JNIEnv *env, jobject t
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1stop(JNIEnv *env, jobject thiz) {
-
     isStart = 0;//关闭rtmp
-
 }
 
 extern "C"
@@ -181,4 +180,33 @@ void releasePackets(RTMPPacket *packet) {
         delete packet;
         packet = nullptr;
     }
+}
+
+//初始化音频编码器faac
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1initAudioCodec(JNIEnv *env, jobject thiz,
+                                                               jint sample_rate,
+                                                               jint channel_count) {
+
+    audioChannel = new AudioChannel;
+    audioChannel->setCallBack(callBack);
+    audioChannel->initCodec(sample_rate, channel_count);
+    //添加音频头到队列中
+    callBack(audioChannel->getAudioHead());
+    return audioChannel->getInputByteNum();
+}
+
+//编码音频数据
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_rtmpdemo_x264_LivePush_native_1pushAudio(JNIEnv *env, jobject thiz,
+                                                          jbyteArray buffer, jint len) {
+    //没有实例化编码或者rtmp没连接成功时退出
+    if (!readyPushing) {
+        return;
+    }
+    jbyte *data = env->GetByteArrayElements(buffer, 0);
+    audioChannel->encode(data, len);
+    env->ReleaseByteArrayElements(buffer, data, 0);
 }

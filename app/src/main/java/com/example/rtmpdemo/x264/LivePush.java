@@ -40,4 +40,7 @@ public class LivePush {
 
     public native void native_release();
 
+    public native int native_initAudioCodec(int sampleRate, int channelCount);
+
+    public native void native_pushAudio(byte[] buffer, int len);
 }

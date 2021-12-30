@@ -77,12 +77,14 @@ public class X264Activity extends AppCompatActivity implements TextureView.Surfa
         //发送层
         livePush = new LivePush();
         livePush.startLive(RTMPURL);
+        //音频数据
+        audioHelper = new AudioHelper();
+        audioHelper.startLive(livePush);
+
         //视频数据
         helper = new VideoHelper(this, binding.textureView, livePush);
         helper.start();
-//        //音频数据
-//        audioHelper = new AudioHelper();
-//        audioHelper.startLive(livePush);
+
     }
 
     @Override

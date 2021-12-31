@@ -1,9 +1,5 @@
 package com.example.rtmpdemo.x264;
 
-import android.util.Log;
-
-import static com.example.rtmpdemo.MainActivity.LOG_TAG;
-
 /**
  * 软编推流，与native连接的类
  */
@@ -42,5 +38,5 @@ public class LivePush {
 
     public native int native_initAudioCodec(int sampleRate, int channelCount);
 
-    public native void native_pushAudio(byte[] buffer, int len);
+    public native void native_pushAudio(byte[] buffer);
 }

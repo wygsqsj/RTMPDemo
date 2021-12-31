@@ -30,7 +30,7 @@ public:
         return inputByteNum;
     }
 
-    void encode(int8_t *data, int len);
+    void encode(int8_t *data);
 
     RTMPPacket *getAudioHead();
 

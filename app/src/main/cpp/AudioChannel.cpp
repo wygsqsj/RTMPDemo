@@ -58,12 +58,11 @@ void AudioChannel::setCallBack(AudioCallback callback) {
 }
 
 //编码音频
-void AudioChannel::encode(int8_t *data, int len) {
-    LOGI("编码的音频数据大小：%d", len);
+void AudioChannel::encode(int8_t *data) {
     //进行编码 参数：编码器 编码数据，编码数据大小 ，输入容器，输入容器大小
     int encodeLen = faacEncEncode(codec,
                                   reinterpret_cast<int32_t *>(data),
-                                  len,
+                                  inputByteNum / 2,//样本数量
                                   outputBuffer,
                                   maxOutputBytes);
     LOGI("编码后的音频数据大小：%d", encodeLen);

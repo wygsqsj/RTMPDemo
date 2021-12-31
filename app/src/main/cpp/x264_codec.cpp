@@ -209,12 +209,12 @@ Java_com_example_rtmpdemo_x264_LivePush_native_1initAudioCodec(JNIEnv *env, jobj
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1pushAudio(JNIEnv *env, jobject thiz,
-                                                          jbyteArray buffer, jint len) {
+                                                          jbyteArray buffer) {
     //没有实例化编码或者rtmp没连接成功时退出
     if (!audioChannel || !readyPushing) {
         return;
     }
     jbyte *data = env->GetByteArrayElements(buffer, 0);
-    audioChannel->encode(data, len);
+    audioChannel->encode(data);
     env->ReleaseByteArrayElements(buffer, data, 0);
 }

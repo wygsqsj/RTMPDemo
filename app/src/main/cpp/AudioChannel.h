@@ -38,6 +38,7 @@ public:
 public:
     AudioCallback callbackAudio;//设置rtmp数据回调
     faacEncHandle codec = 0;
+    int chanelCount = 2;
     //编码出的音频一帧最大大小
     unsigned long maxOutputBytes;
     //输出数据缓冲区

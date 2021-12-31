@@ -2,15 +2,12 @@ package com.example.rtmpdemo.x264;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaFormat;
 import android.media.MediaRecorder;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.util.Log;
 
 import com.example.rtmpdemo.util.LiveTaskManager;
+
+import java.util.concurrent.ExecutorService;
 
 import static com.example.rtmpdemo.MainActivity.LOG_TAG;
 
@@ -43,19 +40,22 @@ public class AudioHelper extends Thread {
     private int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
 
     /**
+     * 单线程线程池, 在该线程中进行音频采样
+     */
+    private ExecutorService mExecutorService;
+
+    /**
      * 缓冲区，此处的最小buffer只能作为参考值，不同于MedeaCodec我们可以直接使用此缓冲区大小，当设备不支持硬编时
      * getMinBufferSize会返回-1，所以还要根据faac返回给我们的输入区大小来确定
      * faac会返回给我们一个缓冲区大小，将他和此缓冲区大小比较之后采用最大值
      */
     private int minBufferSize =
             AudioRecord.getMinBufferSize(SAMPLE_RATE_INHZ, CHANNEL_CONFIG, AUDIO_FORMAT);
-    private long startTime;
     //传输层
     private LivePush livePush;
     private byte[] buffer;
 
-
-    public void startLive(LivePush livePush) {
+    public AudioHelper(LivePush livePush) {
         this.livePush = livePush;
         int inputByteNum = livePush.native_initAudioCodec(SAMPLE_RATE_INHZ, channelCount);
         Log.i(LOG_TAG, "初始化faac完成，获取到输入缓冲区大小：" + inputByteNum);
@@ -70,22 +70,20 @@ public class AudioHelper extends Thread {
                     CHANNEL_CONFIG,
                     AUDIO_FORMAT,
                     minBufferSize);
-            LiveTaskManager.getInstance().execute(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @Override
-    public void run() {
+    public void startAudio() {
         //开始录音
         audioRecord.startRecording();
         isRecoding = true;
+        LiveTaskManager.getInstance().execute(this);
+    }
 
-        if (startTime == 0) {
-            startTime = System.currentTimeMillis();//得到时间，毫秒
-        }
-
+    @Override
+    public void run() {
         //不断的读取数据
         while (isRecoding) {
             int len = audioRecord.read(buffer, 0, buffer.length);
@@ -99,7 +97,6 @@ public class AudioHelper extends Thread {
             audioRecord.release();
             audioRecord = null;
         }
-        startTime = 0;
     }
 
     public void stopAudio() {

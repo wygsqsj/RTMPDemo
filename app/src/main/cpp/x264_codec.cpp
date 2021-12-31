@@ -106,6 +106,11 @@ Java_com_example_rtmpdemo_x264_LivePush_native_1release(JNIEnv *env, jobject thi
         videoChannel = nullptr;
     }
 
+    if (audioChannel) {
+        delete audioChannel;
+        audioChannel = nullptr;
+    }
+
     if (rtmp) {
         RTMP_Close(rtmp);
         RTMP_Free(rtmp);
@@ -144,11 +149,17 @@ void *start(void *args) {
         //连接流
         if (!(ret = RTMP_ConnectStream(rtmp, 0))) break;
         LOGI("connect 成功");
-        //从队列中取出数据发送
-        readyPushing = 1;
         start_time = RTMP_GetTime();
         packets.setWork(1);
         RTMPPacket *packet = 0;
+
+        //添加音频头到队列中
+        if (audioChannel) {
+            callBack(audioChannel->getAudioHead());
+            LOGI("添加音频头到队列中");
+        }
+        //从队列中取出数据发送
+        readyPushing = 1;
         while (isStart) {
             packets.pop(packet);
             if (!isStart) {
@@ -188,12 +199,9 @@ JNIEXPORT jint JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1initAudioCodec(JNIEnv *env, jobject thiz,
                                                                jint sample_rate,
                                                                jint channel_count) {
-
     audioChannel = new AudioChannel;
     audioChannel->setCallBack(callBack);
     audioChannel->initCodec(sample_rate, channel_count);
-    //添加音频头到队列中
-    callBack(audioChannel->getAudioHead());
     return audioChannel->getInputByteNum();
 }
 
@@ -203,7 +211,7 @@ JNIEXPORT void JNICALL
 Java_com_example_rtmpdemo_x264_LivePush_native_1pushAudio(JNIEnv *env, jobject thiz,
                                                           jbyteArray buffer, jint len) {
     //没有实例化编码或者rtmp没连接成功时退出
-    if (!readyPushing) {
+    if (!audioChannel || !readyPushing) {
         return;
     }
     jbyte *data = env->GetByteArrayElements(buffer, 0);

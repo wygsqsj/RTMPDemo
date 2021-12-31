@@ -251,7 +251,6 @@ void VideoChannel::sendVideo(int type, int payload, uint8_t *p_payload) {
     packet->m_nBodySize = body_size;
     //通道值，音视频不能相同
     packet->m_nChannel = 0x04;
-//    packet->m_nTimeStamp = tms;
     packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
     if (mVideoCallBack) {
         mVideoCallBack(packet);

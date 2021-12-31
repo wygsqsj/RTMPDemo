@@ -7,11 +7,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.TextureView;
 
-import com.example.rtmpdemo.databinding.ActivityX264Binding;
-
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import com.example.rtmpdemo.databinding.ActivityX264Binding;
 
 import static com.example.rtmpdemo.MainActivity.RTMPURL;
 
@@ -76,15 +76,16 @@ public class X264Activity extends AppCompatActivity implements TextureView.Surfa
     private void startRTMP() {
         //发送层
         livePush = new LivePush();
-        livePush.startLive(RTMPURL);
-        //音频数据
-        audioHelper = new AudioHelper();
-        audioHelper.startLive(livePush);
 
         //视频数据
         helper = new VideoHelper(this, binding.textureView, livePush);
         helper.start();
 
+        //音频数据
+        audioHelper = new AudioHelper(livePush);
+        audioHelper.startAudio();
+
+        livePush.startLive(RTMPURL);
     }
 
     @Override
